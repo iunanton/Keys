@@ -6,9 +6,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.TextInputLayout;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -39,7 +42,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     private TextInputLayout loginUsernameLayout;
     private TextInputLayout loginPasswordLayout;
     private EditText loginUsername;
-    private EditText loginPasssword;
+    private EditText loginPassword;
     private Button loginSubmitButton;
 
     final String targetURL = "https://owncloudhk.net/oauth";
@@ -52,6 +55,16 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         guestCodeLayout = findViewById(R.id.guest_code_layout);
         guestUsername = findViewById(R.id.guest_username);
         guestCode = findViewById(R.id.guest_code);
+        guestCode.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_DONE) {
+                    guestSubmitButton.performClick();
+                    return true;
+                }
+                return false;
+            }
+        });
         guestSubmitButton = findViewById(R.id.guest_submit);
         guestSubmitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -62,7 +75,17 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         loginUsernameLayout = findViewById(R.id.login_username_layout);
         loginPasswordLayout = findViewById(R.id.login_password_layout);
         loginUsername = findViewById(R.id.login_username);
-        loginPasssword = findViewById(R.id.login_password);
+        loginPassword = findViewById(R.id.login_password);
+        loginPassword.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_DONE) {
+                    loginSubmitButton.performClick();
+                    return true;
+                }
+                return false;
+            }
+        });
         loginSubmitButton = findViewById(R.id.login_submit);
         loginSubmitButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -179,7 +202,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 loginSubmitButton.setEnabled(false);
 
                 username = loginUsername.getText().toString();
-                password = loginPasssword.getText().toString();
+                password = loginPassword.getText().toString();
             }
 
             @Override
@@ -277,7 +300,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         boolean valid = true;
 
         String username = loginUsername.getText().toString();
-        String password = loginPasssword.getText().toString();
+        String password = loginPassword.getText().toString();
 
         if (username.isEmpty() || username.length() < 4) {
             loginUsername.setError("more than 4 alphanumeric characters");
@@ -287,10 +310,10 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         }
 
         if (password.isEmpty() || password.length() < 4 || password.length() > 10) {
-            loginPasssword.setError("between 4 and 10 alphanumeric characters");
+            loginPassword.setError("between 4 and 10 alphanumeric characters");
             valid = false;
         } else {
-            loginPasssword.setError(null);
+            loginPassword.setError(null);
         }
 
         return valid;
