@@ -10,4 +10,6 @@
     <string name="message_username">username</string>
     <string name="message_time">time</string>
     <string name="message_body">message_body</string>
+    <string name="message_hint">Write message here</string>
+    <string name="send_button">Send</string>
 </resources>
