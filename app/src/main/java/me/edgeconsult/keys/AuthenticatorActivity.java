@@ -205,6 +205,18 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 guestUsernameLayout.setEnabled(true);
                 guestCodeLayout.setEnabled(true);
                 guestSubmitButton.setEnabled(true);
+                if (intent != null) {
+                    String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                    final Account account = new Account(accountName, intent.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
+                    String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
+                    String authtokenType = getString(R.string.auth_token_type_guest);
+                    accountManager.addAccountExplicitly(account, null, null);
+                    accountManager.setAuthToken(account, authtokenType, authtoken);
+                    setAccountAuthenticatorResult(intent.getExtras());
+                    setResult(RESULT_OK, intent);
+                    finish();
+                    startActivity(new Intent(AuthenticatorActivity.this, MainActivity.class));
+                }
             }
         }.execute();
     }
@@ -314,7 +326,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
                     final Account account = new Account(accountName, intent.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
                     String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
-                    String authtokenType = getString(R.string.auth_token_type);
+                    String authtokenType = getString(R.string.auth_token_type_full);
                     accountManager.addAccountExplicitly(account, null, null);
                     accountManager.setAuthToken(account, authtokenType, authtoken);
                     setAccountAuthenticatorResult(intent.getExtras());
