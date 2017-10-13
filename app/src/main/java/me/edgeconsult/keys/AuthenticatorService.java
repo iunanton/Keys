@@ -64,7 +64,20 @@ public class AuthenticatorService extends Service {
 
         @Override
         public Bundle addAccount(AccountAuthenticatorResponse accountAuthenticatorResponse, String s, String s1, String[] strings, Bundle bundle) throws NetworkErrorException {
-            return null;
+            AccountManager accountManager = AccountManager.get(context);
+            if (accountManager.getAccountsByType(getString(R.string.account_type)).length == 0) {
+                final Intent intent = new Intent(context, AuthenticatorActivity.class);
+                intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, accountAuthenticatorResponse);
+                intent.putExtra(AccountManager.KEY_ACCOUNT_TYPE, s);
+                final Bundle b = new Bundle();
+                b.putParcelable(AccountManager.KEY_INTENT, intent);
+                return b;
+            } else {
+                final Bundle b = new Bundle();
+                b.putInt(AccountManager.KEY_ERROR_CODE, 1);
+                b.putString(AccountManager.KEY_ERROR_MESSAGE, "Only one account allowed");
+                return b;
+            }
         }
 
         @Override
