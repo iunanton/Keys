@@ -59,7 +59,21 @@ public class AuthenticatorService extends Service {
 
         @Override
         public Bundle getAuthToken(AccountAuthenticatorResponse accountAuthenticatorResponse, Account account, String s, Bundle bundle) throws NetworkErrorException {
-            return null;
+            final AccountManager am = AccountManager.get(context);
+            String authToken = am.peekAuthToken(account, s);
+            if (!authToken.isEmpty()) {
+                final Bundle result = new Bundle();
+                result.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
+                result.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
+                result.putString(AccountManager.KEY_AUTHTOKEN, authToken);
+                return result;
+            }
+            final Intent intent = new Intent(context, AuthenticatorActivity.class);
+            intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, accountAuthenticatorResponse);
+            intent.putExtra(AccountManager.KEY_ACCOUNT_TYPE, account.type);
+            final Bundle b = new Bundle();
+            b.putParcelable(AccountManager.KEY_INTENT, intent);
+            return b;
         }
 
         @Override
