@@ -315,15 +315,19 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         String username = guestUsername.getText().toString();
         String code = guestCode.getText().toString();
 
-        if (username.isEmpty() || username.length() < 4) {
-            guestUsername.setError("more than 4 alphanumeric characters");
+        if (username.isEmpty()) {
+            guestUsername.setError(getString(R.string.error_field_required));
+        } else if (username.length() < 4) {
+            guestUsername.setError(getString(R.string.error_invalid_username));
             valid = false;
         } else {
             guestUsername.setError(null);
         }
 
-        if (code.isEmpty() || code.length() < 4 || code.length() > 10) {
-            guestCode.setError("between 4 and 10 alphanumeric characters");
+        if (code.isEmpty()) {
+            guestCode.setError(getString(R.string.error_field_required));
+        } else if (code.length() < 4) {
+            guestCode.setError(getString(R.string.error_invalid_code));
             valid = false;
         } else {
             guestCode.setError(null);
@@ -338,15 +342,19 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         String username = loginUsername.getText().toString();
         String password = loginPassword.getText().toString();
 
-        if (username.isEmpty() || username.length() < 4) {
-            loginUsername.setError("more than 4 alphanumeric characters");
+        if (username.isEmpty()) {
+            loginUsername.setError(getString(R.string.error_field_required));
+        } else if (username.length() < 4) {
+            loginUsername.setError(getString(R.string.error_invalid_username));
             valid = false;
         } else {
             loginUsername.setError(null);
         }
 
-        if (password.isEmpty() || password.length() < 4 || password.length() > 10) {
-            loginPassword.setError("between 4 and 10 alphanumeric characters");
+        if (password.isEmpty()) {
+            loginPassword.setError(getString(R.string.error_field_required));
+        } else if (password.length() < 4) {
+            loginPassword.setError(getString(R.string.error_invalid_password));
             valid = false;
         } else {
             loginPassword.setError(null);
