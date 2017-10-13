@@ -9,15 +9,18 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -108,21 +111,39 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     httpsURLConnection.setUseCaches(false);
                     httpsURLConnection.setDoInput(true);
                     httpsURLConnection.setDoOutput(true);
-                    DataOutputStream wr = new DataOutputStream(httpsURLConnection.getOutputStream());
-                    wr.writeBytes(urlParameters);
-                    wr.flush();
-                    wr.close();
-
-                    BufferedReader rd = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()));
+                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(httpsURLConnection.getOutputStream()));
+                    bufferedWriter.write(urlParameters);
+                    bufferedWriter.flush();
+                    bufferedWriter.close();
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()));
+                    StringBuilder stringBuilder = new StringBuilder();
                     String line;
-                    StringBuffer response = new StringBuffer();
-                    while((line = rd.readLine()) != null) {
-                        response.append(line);
-                        response.append('\r');
+                    while((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
                     }
-                    rd.close();
+                    bufferedReader.close();
+                    Log.i("guestSubmit", stringBuilder.toString());
                 } catch (MalformedURLException e) {
-                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "URL could not be parsed", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (UnknownHostException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "Unknown host", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (FileNotFoundException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "Invalid grant", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
@@ -147,21 +168,84 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         }
 
         new AsyncTask<Void, Void, Intent>() {
+
+            private String username;
+            private String password;
+
             @Override
             protected void onPreExecute() {
                 loginUsernameLayout.setEnabled(false);
                 loginPasswordLayout.setEnabled(false);
                 loginSubmitButton.setEnabled(false);
+
+                username = loginUsername.getText().toString();
+                password = loginPasssword.getText().toString();
             }
 
             @Override
             protected Intent doInBackground(Void... voids) {
+                HttpsURLConnection httpsURLConnection = null;
+                try {
+                    URL url = new URL(targetURL);
+                    String urlParameters = "grant_type=password&username="
+                            + URLEncoder.encode(username, "UTF-8") + "&password="
+                            + URLEncoder.encode(password, "UTF-8");
+                    Log.i("guestSubmit", urlParameters);
+                    httpsURLConnection = (HttpsURLConnection) url.openConnection();
+                    httpsURLConnection.setRequestMethod("POST");
+                    httpsURLConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0");
+                    httpsURLConnection.setRequestProperty("Accept", "*/*");
+                    httpsURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    httpsURLConnection.setRequestProperty("Content-Length", "" + Integer.toString(urlParameters.getBytes().length));
+                    httpsURLConnection.setUseCaches(false);
+                    httpsURLConnection.setDoInput(true);
+                    httpsURLConnection.setDoOutput(true);
+                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(httpsURLConnection.getOutputStream()));
+                    bufferedWriter.write(urlParameters);
+                    bufferedWriter.flush();
+                    bufferedWriter.close();
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpsURLConnection.getInputStream()));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+                    bufferedReader.close();
+                    Log.i("loginSubmit", stringBuilder.toString());
+                } catch (MalformedURLException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "URL could not be parsed", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (UnknownHostException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "Unknown host", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (FileNotFoundException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "Invalid grant", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+
+                }
                 return null;
             }
 
             @Override
             protected void onPostExecute(Intent intent) {
-                //
+                loginUsernameLayout.setEnabled(true);
+                loginPasswordLayout.setEnabled(true);
+                loginSubmitButton.setEnabled(true);
             }
         }.execute();
     }
