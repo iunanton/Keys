@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 /**
  * Created by yun on 10/13/17.
@@ -18,13 +19,14 @@ import android.support.annotation.Nullable;
 
 public class AuthenticatorService extends Service {
 
+    private static final String AUTHENTICATOR_SERVICE_TAG = MainActivity.class.getSimpleName();
     private static AccountAuthenticator accountAuthenticator = null;
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         IBinder iBinder = null;
-        if (intent.getAction().equals(AccountManager.ACTION_AUTHENTICATOR_INTENT)) {
+        if (intent.getAction().equals(android.accounts.AccountManager.ACTION_AUTHENTICATOR_INTENT)) {
             iBinder = getAuthenticator().getIBinder();
         }
         return iBinder;
@@ -60,6 +62,7 @@ public class AuthenticatorService extends Service {
         @Override
         public Bundle getAuthToken(AccountAuthenticatorResponse accountAuthenticatorResponse, Account account, String s, Bundle bundle) throws NetworkErrorException {
             final AccountManager am = AccountManager.get(context);
+            Log.i(AUTHENTICATOR_SERVICE_TAG, am.toString());
             String authToken = am.peekAuthToken(account, s);
             if (!authToken.isEmpty()) {
                 final Bundle result = new Bundle();

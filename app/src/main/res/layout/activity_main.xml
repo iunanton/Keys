@@ -3,9 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <ListView
+        android:id="@+id/messages_wrapper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/input"/>
+        android:layout_above="@+id/input"
+        android:transcriptMode="alwaysScroll"
+        android:stackFromBottom="true"/>
     <EditText
         android:id="@+id/input"
         android:layout_width="match_parent"

@@ -1,5 +1,7 @@
 package me.edgeconsult.keys;
 
+import android.util.Log;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.WebSocket;
@@ -11,13 +13,15 @@ import okhttp3.WebSocketListener;
 
 public class WebSocketClient {
 
-    private static OkHttpClient client = null;
+    private static final String WEB_SOCKET_CLIENT = WebSocketClient.class.getSimpleName();
+
+    private static OkHttpClient client;
     private static WebSocket webSocket;
 
     static WebSocket getInstance(String url, WebSocketListener webSocketListener) {
         if (client == null) {
-            Request request = new Request.Builder().url(url).build();
-            webSocket = client.newWebSocket(request, webSocketListener);
+            client = new OkHttpClient();
+            webSocket = client.newWebSocket(new Request.Builder().url(url).build(), webSocketListener);
             client.dispatcher().executorService().shutdown();
         }
         return webSocket;

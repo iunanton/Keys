@@ -209,7 +209,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
                     final Account account = new Account(accountName, intent.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
                     String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
-                    String authtokenType = getString(R.string.auth_token_type_guest);
+                    String authtokenType = getString(R.string.auth_token_type);
                     accountManager.addAccountExplicitly(account, null, null);
                     accountManager.setAuthToken(account, authtokenType, authtoken);
                     setAccountAuthenticatorResult(intent.getExtras());
@@ -326,7 +326,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
                     final Account account = new Account(accountName, intent.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
                     String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
-                    String authtokenType = getString(R.string.auth_token_type_full);
+                    String authtokenType = getString(R.string.auth_token_type);
                     accountManager.addAccountExplicitly(account, null, null);
                     accountManager.setAuthToken(account, authtokenType, authtoken);
                     setAccountAuthenticatorResult(intent.getExtras());
