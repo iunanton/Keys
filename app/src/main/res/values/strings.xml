@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Keys!</string>
+    <string name="app_name">Keys</string>
     <string name="account_type">me.edgeconsult.keys</string>
     <string name="auth_token_type_full">full_access</string>
     <string name="auth_token_type_guest">guest_access</string>
