@@ -1,6 +1,7 @@
 package me.edgeconsult.keys;
 
 import android.accounts.AccountAuthenticatorActivity;
+import android.accounts.AccountManager;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -13,6 +14,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -145,7 +149,21 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                         stringBuilder.append(line);
                     }
                     bufferedReader.close();
-                    Log.i("guestSubmit", stringBuilder.toString());
+                    JSONObject json = new JSONObject(stringBuilder.toString());
+                    if (json.has("access_token")) {
+                        final Intent i = new Intent();
+                        i.putExtra(AccountManager.KEY_ACCOUNT_NAME, username);
+                        i.putExtra(AccountManager.KEY_ACCOUNT_TYPE, getString(R.string.account_type));
+                        i.putExtra(AccountManager.KEY_AUTHTOKEN, json.getString("access_token"));
+                        return i;
+                    }
+                } catch (JSONException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "JSON could not be parsed", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } catch (MalformedURLException e) {
                     runOnUiThread(new Runnable() {
                         @Override
@@ -236,7 +254,21 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                         stringBuilder.append(line);
                     }
                     bufferedReader.close();
-                    Log.i("loginSubmit", stringBuilder.toString());
+                    JSONObject json = new JSONObject(stringBuilder.toString());
+                    if (json.has("access_token")) {
+                        final Intent i = new Intent();
+                        i.putExtra(AccountManager.KEY_ACCOUNT_NAME, username);
+                        i.putExtra(AccountManager.KEY_ACCOUNT_TYPE, getString(R.string.account_type));
+                        i.putExtra(AccountManager.KEY_AUTHTOKEN, json.getString("access_token"));
+                        return i;
+                    }
+                } catch (JSONException e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(AuthenticatorActivity.this, "JSON could not be parsed", Toast.LENGTH_LONG).show();
+                        }
+                    });
                 } catch (MalformedURLException e) {
                     runOnUiThread(new Runnable() {
                         @Override

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Keys!</string>
+    <string name="account_type">me.edgeconsult.keys</string>
 </resources>
