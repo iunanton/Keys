@@ -170,7 +170,9 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-
+                    if(httpsURLConnection != null) {
+                        httpsURLConnection.disconnect();
+                    }
                 }
                 return null;
             }
@@ -259,7 +261,9 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-
+                    if(httpsURLConnection != null) {
+                        httpsURLConnection.disconnect();
+                    }
                 }
                 return null;
             }
