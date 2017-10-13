@@ -6,11 +6,16 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.OnAccountsUpdateListener;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.OperationCanceledException;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -55,6 +60,14 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
 
     private WebSocket webSocket;
 
+    private boolean activityOnPause = true;
+
+    private NotificationManager mNotificationManager;
+    private static int notificationID = 1;
+    private PendingIntent mPendingIntent;
+
+    private Uri uri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,6 +109,8 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
         MessagesWrapper.setAdapter(messagesAdapter);
         Input = (EditText) findViewById(R.id.input);
         SendButton = (ImageButton) findViewById(R.id.send_button);
+        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mPendingIntent = PendingIntent.getActivity(this, 0, getIntent(), PendingIntent.FLAG_UPDATE_CURRENT);
         if (accountManager.getAccountsByType(getString(R.string.account_type)).length > 0) {
             startSession();
         }
@@ -105,12 +120,14 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
     protected void onResume() {
         super.onResume();
         accountManager.addOnAccountsUpdatedListener(this, null, true);
+        activityOnPause = false;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         accountManager.removeOnAccountsUpdatedListener(this);
+        activityOnPause = true;
     }
 
     @Override
@@ -200,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                                                 JSONObject item = messages.getJSONObject(i);
                                                 final String username = item.getString("username");
                                                 final Long timestamp = item.getLong("timestamp");
-                                                final String messageBody = item.getString("messageBody");
+                                                final String messageBody = item.getString("messageBody").replaceAll("&apos;", "\'").replaceAll("&quot;", "\"");
                                                 runOnUiThread(new Runnable() {
                                                     @Override
                                                     public void run() {
@@ -215,6 +232,8 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                                             runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
+                                                    if (activityOnPause)
+                                                        launchNotification("New user joined", username + " joined! Say \"Hi\" to him!");
                                                     Toast.makeText(getApplicationContext(), username + " joined", Toast.LENGTH_LONG).show();
                                                 }
                                             });
@@ -223,17 +242,21 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                                             runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
+                                                    if (activityOnPause)
+                                                        launchNotification("User left", "One user just left chat..");
                                                     Toast.makeText(getApplicationContext(), "user left", Toast.LENGTH_LONG).show();
                                                 }
                                             });
                                             break;
                                         case "messageAdd":
-                                            final String message_body = data.getString("messageBody");
+                                            final String message_body = data.getString("messageBody").replaceAll("&apos;", "\'").replaceAll("&quot;", "\"");
                                             final Long message_timestamp = data.getLong("timestamp");
                                             final String message_username = data.getString("username");
                                             runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
+                                                    if (activityOnPause)
+                                                        launchNotification("New message", message_username + ": " + message_body);
                                                     messagesAdapter.add(new Message(message_username, message_timestamp, message_body));
                                                 }
                                             });
@@ -255,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                         webSocket = WebSocketClient.getInstance(url, webSocketListener);
                         SendButton.setOnClickListener(new View.OnClickListener() {
                             public void onClick(View v) {
-                                String ed_text = Input.getText().toString().trim().replaceAll("\\r|\\n", " ");
+                                String ed_text = Input.getText().toString().trim().replaceAll("\\r|\\n", " ").replaceAll("\'", "&apos;").replaceAll("\"", "&quot;");
                                 if (ed_text.isEmpty() || ed_text.length() == 0 || ed_text.equals("")) {
                                     //EditText is empty
                                 } else {
@@ -275,6 +298,19 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                 }
             }
         }, null);
+    }
+
+    private void launchNotification(CharSequence title, CharSequence contentText) {
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(getApplicationContext());
+        mBuilder.setSmallIcon(R.drawable.ic_stat_name);
+        mBuilder.setColor(0xFF00CCCC);
+        mBuilder.setLights(0xFF00CCCC, 500, 1500);
+        mBuilder.setSound(uri);
+        mBuilder.setContentTitle(title);
+        mBuilder.setContentText(contentText);
+        mBuilder.setContentIntent(mPendingIntent);
+        mBuilder.setAutoCancel(true);
+        mNotificationManager.notify(notificationID, mBuilder.build());
     }
 
 }
