@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Keys!</string>
     <string name="account_type">me.edgeconsult.keys</string>
+    <string name="auth_token_type">full_access</string>
     <string name="error_invalid_username">This username is too short</string>
     <string name="error_invalid_code">This code is too short</string>
     <string name="error_invalid_password">This password is too short</string>

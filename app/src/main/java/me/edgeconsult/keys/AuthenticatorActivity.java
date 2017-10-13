@@ -1,5 +1,6 @@
 package me.edgeconsult.keys;
 
+import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
 import android.content.Intent;
@@ -37,6 +38,9 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
+    private static final String AUTHENTICATOR_ACTIVITY_TAG = AuthenticatorActivity.class.getSimpleName();
+    private AccountManager accountManager = null;
+
     private TextInputLayout guestUsernameLayout;
     private TextInputLayout guestCodeLayout;
     private EditText guestUsername;
@@ -55,6 +59,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         setContentView(R.layout.activity_authenticator);
+        accountManager = AccountManager.get(this);
         guestUsernameLayout = findViewById(R.id.guest_username_layout);
         guestCodeLayout = findViewById(R.id.guest_code_layout);
         guestUsername = findViewById(R.id.guest_username);
@@ -128,7 +133,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     String urlParameters = "grant_type=guest&username="
                             + URLEncoder.encode(username, "UTF-8") + "&code="
                             + URLEncoder.encode(code, "UTF-8");
-                    Log.i("guestSubmit", urlParameters);
+                    Log.i(AUTHENTICATOR_ACTIVITY_TAG, urlParameters);
                     httpsURLConnection = (HttpsURLConnection) url.openConnection();
                     httpsURLConnection.setRequestMethod("POST");
                     httpsURLConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0");
@@ -233,7 +238,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                     String urlParameters = "grant_type=password&username="
                             + URLEncoder.encode(username, "UTF-8") + "&password="
                             + URLEncoder.encode(password, "UTF-8");
-                    Log.i("guestSubmit", urlParameters);
+                    Log.i(AUTHENTICATOR_ACTIVITY_TAG, urlParameters);
                     httpsURLConnection = (HttpsURLConnection) url.openConnection();
                     httpsURLConnection.setRequestMethod("POST");
                     httpsURLConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) Gecko/20100101 Firefox/55.0");
@@ -305,6 +310,18 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 loginUsernameLayout.setEnabled(true);
                 loginPasswordLayout.setEnabled(true);
                 loginSubmitButton.setEnabled(true);
+                if (intent != null) {
+                    String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                    final Account account = new Account(accountName, intent.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
+                    String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
+                    String authtokenType = getString(R.string.auth_token_type);
+                    accountManager.addAccountExplicitly(account, null, null);
+                    accountManager.setAuthToken(account, authtokenType, authtoken);
+                    setAccountAuthenticatorResult(intent.getExtras());
+                    setResult(RESULT_OK, intent);
+                    finish();
+                    startActivity(new Intent(AuthenticatorActivity.this, MainActivity.class));
+                }
             }
         }.execute();
     }
