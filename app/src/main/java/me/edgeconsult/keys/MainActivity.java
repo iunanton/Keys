@@ -8,10 +8,14 @@ import android.accounts.AuthenticatorException;
 import android.accounts.OnAccountsUpdateListener;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.IBinder;
 import android.os.OperationCanceledException;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -31,6 +35,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -40,7 +45,7 @@ import okhttp3.Request;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 
-public class MainActivity extends AppCompatActivity implements OnAccountsUpdateListener {
+public class MainActivity extends AppCompatActivity implements OnAccountsUpdateListener, MyListener {
 
     private static final String MAIN_ACTIVITY_TAG = MainActivity.class.getSimpleName();
     private AccountManager accountManager = null;
@@ -68,10 +73,56 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
 
     private Uri uri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
+    private WebSocketService mBoundService;
+    private boolean mIsBound = false;
+
+    private String token;
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            Log.i(ServiceConnection.class.getSimpleName(), "onServiceConnected");
+            mBoundService = ((WebSocketService.MyBinder)service).getService();
+            mBoundService.registerListener(MainActivity.this);
+            mBoundService.connect(token);
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            mBoundService = null;
+        }
+    };
+
+    void doBindService() {
+        Log.i(MainActivity.class.getSimpleName(), "doBindService");
+        bindService(new Intent(this, WebSocketService.class), mConnection, BIND_AUTO_CREATE);
+        mIsBound = true;
+    }
+
+    void doUnbindService() {
+        Log.i(MainActivity.class.getSimpleName(), "doUnbindService");
+        if (mIsBound) {
+            if (mBoundService != null) {
+                mBoundService.unregisterListener(this);
+            }
+            unbindService(mConnection);
+            mIsBound = false;
+        }
+    }
+
+    /*
+    class MyWebSocketListener extends WebSocketListener implements Serializable {
+        @Override
+        public void onMessage(WebSocket webSocket, String text) {
+
+        }
+    }
+*/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //Intent i = new Intent(this, WebSocketService.class);
+        //i.putExtra("listener", (Serializable) new MyWebSocketListener());
+        //startService(i);
         accountManager = AccountManager.get(this);
 
         messagesList = new ArrayList<>();
@@ -201,79 +252,10 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                         startActivity(intent);
                         finish();
                     } else {
-                        String url = "wss://owncloudhk.net/app?access_token=" + b.getString(AccountManager.KEY_AUTHTOKEN);
-                        WebSocketListener webSocketListener = new WebSocketListener() {
-                            @Override
-                            public void onMessage(WebSocket webSocket, String text) {
-                                try {
-                                    final JSONObject message = new JSONObject(text);
-                                    final String type = message.getString("type");
-                                    JSONObject data = message.getJSONObject("data");
-                                    switch (type) {
-                                        case "context": {
-                                            final JSONArray users = data.getJSONArray("users");
-                                            final JSONArray messages = data.getJSONArray("messages");
-                                            for (int i = 0; i < messages.length(); ++i) {
-                                                JSONObject item = messages.getJSONObject(i);
-                                                final String username = item.getString("username");
-                                                final Long timestamp = item.getLong("timestamp");
-                                                final String messageBody = item.getString("messageBody").replaceAll("&apos;", "\'").replaceAll("&quot;", "\"");
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        messagesAdapter.add(new Message(username, timestamp, messageBody));
-                                                    }
-                                                });
-                                            }
-                                            break;
-                                        }
-                                        case "userJoined":
-                                            final String username = data.getString("username");
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (activityOnPause)
-                                                        launchNotification("New user joined", username + " joined! Say \"Hi\" to him!");
-                                                    Toast.makeText(getApplicationContext(), username + " joined", Toast.LENGTH_LONG).show();
-                                                }
-                                            });
-                                            break;
-                                        case "userLeft":
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (activityOnPause)
-                                                        launchNotification("User left", "One user just left chat..");
-                                                    Toast.makeText(getApplicationContext(), "user left", Toast.LENGTH_LONG).show();
-                                                }
-                                            });
-                                            break;
-                                        case "messageAdd":
-                                            final String message_body = data.getString("messageBody").replaceAll("&apos;", "\'").replaceAll("&quot;", "\"");
-                                            final Long message_timestamp = data.getLong("timestamp");
-                                            final String message_username = data.getString("username");
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    if (activityOnPause)
-                                                        launchNotification("New message", message_username + ": " + message_body);
-                                                    messagesAdapter.add(new Message(message_username, message_timestamp, message_body));
-                                                }
-                                            });
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                } catch (final JSONException e) {
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Toast.makeText(MainActivity.this, "JSON could not be parsed", Toast.LENGTH_LONG).show();
-                                        }
-                                    });
-                                }
-                            }
-                        };
+                        token = b.getString(AccountManager.KEY_AUTHTOKEN);
+                        doBindService();
+                        /*String url = "wss://owncloudhk.net/app?access_token=" + b.getString(AccountManager.KEY_AUTHTOKEN);
+                        WebSocketListener webSocketListener = new MyWebSocketListener();
                         Log.i(MAIN_ACTIVITY_TAG, url);
                         webSocket = WebSocketClient.getInstance(url, webSocketListener);
                         SendButton.setOnClickListener(new View.OnClickListener() {
@@ -287,7 +269,7 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                                     Input.setText("");
                                 }
                             }
-                        });
+                        });*/
                     }
                 } catch (AuthenticatorException e) {
                     e.printStackTrace();
@@ -313,4 +295,74 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
         mNotificationManager.notify(notificationID, mBuilder.build());
     }
 
+    @Override
+    public void onMessage(String text) {
+        try {
+            final JSONObject message = new JSONObject(text);
+            final String type = message.getString("type");
+            JSONObject data = message.getJSONObject("data");
+            switch (type) {
+                case "context": {
+                    final JSONArray users = data.getJSONArray("users");
+                    final JSONArray messages = data.getJSONArray("messages");
+                    for (int i = 0; i < messages.length(); ++i) {
+                        JSONObject item = messages.getJSONObject(i);
+                        final String username = item.getString("username");
+                        final Long timestamp = item.getLong("timestamp");
+                        final String messageBody = item.getString("messageBody").replaceAll("&apos;", "\'").replaceAll("&quot;", "\"");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                messagesAdapter.add(new Message(username, timestamp, messageBody));
+                            }
+                        });
+                    }
+                    break;
+                }
+                case "userJoined":
+                    final String username = data.getString("username");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (activityOnPause)
+                                launchNotification("New user joined", username + " joined! Say \"Hi\" to him!");
+                            Toast.makeText(getApplicationContext(), username + " joined", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    break;
+                case "userLeft":
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (activityOnPause)
+                                launchNotification("User left", "One user just left chat..");
+                            Toast.makeText(getApplicationContext(), "user left", Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    break;
+                case "messageAdd":
+                    final String message_body = data.getString("messageBody").replaceAll("&apos;", "\'").replaceAll("&quot;", "\"");
+                    final Long message_timestamp = data.getLong("timestamp");
+                    final String message_username = data.getString("username");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (activityOnPause)
+                                launchNotification("New message", message_username + ": " + message_body);
+                            messagesAdapter.add(new Message(message_username, message_timestamp, message_body));
+                        }
+                    });
+                    break;
+                default:
+                    break;
+            }
+        } catch (final JSONException e) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "JSON could not be parsed", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+    }
 }
