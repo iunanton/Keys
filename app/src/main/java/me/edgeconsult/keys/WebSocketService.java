@@ -100,6 +100,10 @@ public class WebSocketService extends Service {
         mWebSocketClient.connect();
     }
 
+    public void send(String text) {
+        mWebSocketClient.send(text);
+    }
+
     public void registerListener(MyListener listener) {
         mListeners.add(listener);
     }
