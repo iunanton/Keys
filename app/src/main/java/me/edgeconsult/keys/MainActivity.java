@@ -188,26 +188,29 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
 
     @Override
     public void onAccountsUpdated(Account[] accounts) {
-        if (accounts.length == 0) {
-            accountManager.addAccount(getString(R.string.account_type), null, null,null, null, new AccountManagerCallback<Bundle>() {
-                @Override
-                public void run(AccountManagerFuture<Bundle> accountManagerFuture) {
-                    Bundle bundle;
-                    try {
-                        bundle = accountManagerFuture.getResult();
-                        Intent intent = bundle.getParcelable(AccountManager.KEY_INTENT);
-                        startActivity(intent);
-                        finish();
-                    } catch (AuthenticatorException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (android.accounts.OperationCanceledException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, null);
+        for (Account account:accounts) {
+            if (account.type.equals(getString(R.string.account_type))) {
+                return;
+            }
         }
+        accountManager.addAccount(getString(R.string.account_type), null, null,null, null, new AccountManagerCallback<Bundle>() {
+            @Override
+            public void run(AccountManagerFuture<Bundle> accountManagerFuture) {
+                Bundle bundle;
+                try {
+                    bundle = accountManagerFuture.getResult();
+                    Intent intent = bundle.getParcelable(AccountManager.KEY_INTENT);
+                    startActivity(intent);
+                    finish();
+                } catch (AuthenticatorException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (android.accounts.OperationCanceledException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, null);
     }
 
     class Message {
@@ -257,7 +260,7 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                         /*String url = "wss://owncloudhk.net/app?access_token=" + b.getString(AccountManager.KEY_AUTHTOKEN);
                         WebSocketListener webSocketListener = new MyWebSocketListener();
                         Log.i(MAIN_ACTIVITY_TAG, url);
-                        webSocket = WebSocketClient.getInstance(url, webSocketListener);
+                        webSocket = WebSocketClient.getInstance(url, webSocketListener);*/
                         SendButton.setOnClickListener(new View.OnClickListener() {
                             public void onClick(View v) {
                                 String ed_text = Input.getText().toString().trim().replaceAll("\\r|\\n", " ").replaceAll("\'", "&apos;").replaceAll("\"", "&quot;");
@@ -265,11 +268,11 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                                     //EditText is empty
                                 } else {
                                     String msg = "{ \"type\": \"message\", \"data\": { \"messageBody\": \"" + ed_text + "\" } }";
-                                    webSocket.send(msg);
+                                    mBoundService.send(msg);
                                     Input.setText("");
                                 }
                             }
-                        });*/
+                        });
                     }
                 } catch (AuthenticatorException e) {
                     e.printStackTrace();
