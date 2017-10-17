@@ -42,6 +42,8 @@ public class WebSocketService extends Service {
     private String targetURL = "wss://owncloudhk.net/app";
     private org.java_websocket.client.WebSocketClient mWebSocketClient;
 
+    private boolean connected = false;
+
     @Override
     public void onCreate() {
         Log.i(WebSocketService.class.getSimpleName(), "onCreate");
@@ -80,6 +82,7 @@ public class WebSocketService extends Service {
             @Override
             public void onClose(int i, String s, boolean b) {
                 Log.i("Websocket", "Closed " + s);
+                connected = false;
             }
 
             @Override
@@ -98,10 +101,16 @@ public class WebSocketService extends Service {
         }
         mWebSocketClient.setWebSocketFactory(new DefaultSSLWebSocketClientFactory(sslContext));
         mWebSocketClient.connect();
+        connected = true;
+    }
+
+    public boolean connected() {
+        return connected;
     }
 
     public void send(String text) {
-        mWebSocketClient.send(text);
+        if (connected)
+            mWebSocketClient.send(text);
     }
 
     public void registerListener(MyListener listener) {
