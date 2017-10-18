@@ -5,7 +5,6 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
-import android.accounts.OnAccountsUpdateListener;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
@@ -14,8 +13,6 @@ import android.content.ServiceConnection;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.IBinder;
-import android.os.OperationCanceledException;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,6 +24,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,19 +33,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
-import okhttp3.Request;
-import okhttp3.WebSocket;
-import okhttp3.WebSocketListener;
-
-public class MainActivity extends AppCompatActivity implements OnAccountsUpdateListener, MyListener {
+public class MainActivity extends AppCompatActivity implements MyListener {
 
     private static final String MAIN_ACTIVITY_TAG = MainActivity.class.getSimpleName();
+    private boolean mIsResumed = false;
+
     private AccountManager accountManager = null;
 
     private ArrayList<Message> messagesList;
@@ -59,11 +54,10 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
         TextView body;
     }
 
-    private ListView MessagesWrapper;
-    private EditText Input;
-    private ImageButton SendButton;
-
-    private WebSocket webSocket;
+    private ListView mListView;
+    private EditText mEditText;
+    private ImageButton mImageButton;
+    private ProgressBar mProgressBar;
 
     private boolean activityOnPause = true;
 
@@ -83,7 +77,8 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
             Log.i(ServiceConnection.class.getSimpleName(), "onServiceConnected");
             mBoundService = ((WebSocketService.MyBinder)service).getService();
             mBoundService.registerListener(MainActivity.this);
-            mBoundService.connect(token);
+            mIsBound = true;
+            startSession();
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -91,42 +86,21 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
         }
     };
 
-    void doBindService() {
-        Log.i(MainActivity.class.getSimpleName(), "doBindService");
-        bindService(new Intent(this, WebSocketService.class), mConnection, BIND_AUTO_CREATE);
-        mIsBound = true;
-    }
-
-    void doUnbindService() {
-        Log.i(MainActivity.class.getSimpleName(), "doUnbindService");
-        if (mIsBound) {
-            if (mBoundService != null) {
-                mBoundService.unregisterListener(this);
-            }
-            unbindService(mConnection);
-            mIsBound = false;
-        }
-    }
-
-    /*
-    class MyWebSocketListener extends WebSocketListener implements Serializable {
-        @Override
-        public void onMessage(WebSocket webSocket, String text) {
-
-        }
-    }
-*/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(MAIN_ACTIVITY_TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //Intent i = new Intent(this, WebSocketService.class);
-        //i.putExtra("listener", (Serializable) new MyWebSocketListener());
-        //startService(i);
+
         accountManager = AccountManager.get(this);
 
-        messagesList = new ArrayList<>();
+        mListView = (ListView) findViewById(R.id.messages_wrapper);
+        mEditText = (EditText) findViewById(R.id.input);
+        mImageButton = (ImageButton) findViewById(R.id.send_button);
+        mProgressBar = (ProgressBar) findViewById(R.id.indeterminateBar);
+        showProgressBar();
 
+        messagesList = new ArrayList<>();
         messagesAdapter =
                 new ArrayAdapter<Message>(this,
                         R.layout.item_message,
@@ -156,29 +130,43 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                     }
                 };
 
-        MessagesWrapper = (ListView) findViewById(R.id.messages_wrapper);
-        MessagesWrapper.setAdapter(messagesAdapter);
-        Input = (EditText) findViewById(R.id.input);
-        SendButton = (ImageButton) findViewById(R.id.send_button);
+        mListView.setAdapter(messagesAdapter);
+
+        mImageButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                String ed_text = mEditText.getText().toString().trim().replaceAll("\\r|\\n", " ").replaceAll("\'", "&apos;").replaceAll("\"", "&quot;");
+                if (ed_text.isEmpty() || ed_text.length() == 0 || ed_text.equals("")) {
+                    //EditText is empty
+                } else {
+                    String msg = "{ \"type\": \"message\", \"data\": { \"messageBody\": \"" + ed_text + "\" } }";
+                    mBoundService.send(msg);
+                    mEditText.setText("");
+                }
+            }
+        });
+
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mPendingIntent = PendingIntent.getActivity(this, 0, getIntent(), PendingIntent.FLAG_UPDATE_CURRENT);
-        if (accountManager.getAccountsByType(getString(R.string.account_type)).length > 0) {
-            startSession();
-        }
+
+        bindService(new Intent(this, WebSocketService.class), mConnection, BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        accountManager.addOnAccountsUpdatedListener(this, null, true);
-        activityOnPause = false;
+        mIsResumed = true;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        accountManager.removeOnAccountsUpdatedListener(this);
-        activityOnPause = true;
+        mIsResumed = false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(mConnection);
     }
 
     @Override
@@ -186,103 +174,68 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
         moveTaskToBack(true);
     }
 
-    @Override
-    public void onAccountsUpdated(Account[] accounts) {
-        for (Account account:accounts) {
-            if (account.type.equals(getString(R.string.account_type))) {
-                return;
-            }
-        }
-        accountManager.addAccount(getString(R.string.account_type), null, null,null, null, new AccountManagerCallback<Bundle>() {
-            @Override
-            public void run(AccountManagerFuture<Bundle> accountManagerFuture) {
-                Bundle bundle;
-                try {
-                    bundle = accountManagerFuture.getResult();
-                    Intent intent = bundle.getParcelable(AccountManager.KEY_INTENT);
-                    startActivity(intent);
-                    finish();
-                } catch (AuthenticatorException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (android.accounts.OperationCanceledException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, null);
-    }
-
-    class Message {
-        private String username;
-        private Long time;
-        private String body;
-
-        public Message(String username, Long time, String body) {
-            this.username = username;
-            this.time = time;
-            this.body = body;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public Long getTime() {
-            return time;
-        }
-
-        public String getBody() {
-            return body;
-        }
-
-        @Override
-        public String toString() {
-            return this.body;
-        }
-    }
-
     private void startSession() {
-        Account account = accountManager.getAccountsByType(getString(R.string.account_type))[0];
-        accountManager.getAuthToken(account, getString(R.string.auth_token_type), null, null, new AccountManagerCallback<Bundle>() {
-            @Override
-            public void run(AccountManagerFuture<Bundle> accountManagerFuture) {
-                Bundle b;
-                try {
-                    b = accountManagerFuture.getResult();
-                    if (b.containsKey(AccountManager.KEY_INTENT)) {
-                        Intent intent = b.getParcelable(AccountManager.KEY_INTENT);
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        token = b.getString(AccountManager.KEY_AUTHTOKEN);
-                        doBindService();
-                        /*String url = "wss://owncloudhk.net/app?access_token=" + b.getString(AccountManager.KEY_AUTHTOKEN);
-                        WebSocketListener webSocketListener = new MyWebSocketListener();
-                        Log.i(MAIN_ACTIVITY_TAG, url);
-                        webSocket = WebSocketClient.getInstance(url, webSocketListener);*/
-                        SendButton.setOnClickListener(new View.OnClickListener() {
-                            public void onClick(View v) {
-                                String ed_text = Input.getText().toString().trim().replaceAll("\\r|\\n", " ").replaceAll("\'", "&apos;").replaceAll("\"", "&quot;");
-                                if (ed_text.isEmpty() || ed_text.length() == 0 || ed_text.equals("")) {
-                                    //EditText is empty
-                                } else {
-                                    String msg = "{ \"type\": \"message\", \"data\": { \"messageBody\": \"" + ed_text + "\" } }";
-                                    mBoundService.send(msg);
-                                    Input.setText("");
-                                }
+        if (!mBoundService.connected()) {
+            Account[] accounts = accountManager.getAccountsByType(getString(R.string.account_type));
+            if (accounts != null && accounts.length > 0) {
+                accountManager.getAuthToken(accounts[0], getString(R.string.auth_token_type), null, null, new AccountManagerCallback<Bundle>() {
+                    @Override
+                    public void run(AccountManagerFuture<Bundle> accountManagerFuture) {
+                        Bundle b;
+                        try {
+                            b = accountManagerFuture.getResult();
+                            if (b.containsKey(AccountManager.KEY_INTENT)) {
+                                Intent intent = b.getParcelable(AccountManager.KEY_INTENT);
+                                startActivity(intent);
+                                finish();
+                            } else {
+                                token = b.getString(AccountManager.KEY_AUTHTOKEN);
+                                mBoundService.connect(token);
                             }
-                        });
+                        } catch (AuthenticatorException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (android.accounts.OperationCanceledException e) {
+                            e.printStackTrace();
+                        }
                     }
-                } catch (AuthenticatorException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (android.accounts.OperationCanceledException e) {
-                    e.printStackTrace();
-                }
+                }, null);
+            } else {
+                accountManager.addAccount(getString(R.string.account_type), null, null, null, null, new AccountManagerCallback<Bundle>() {
+                    @Override
+                    public void run(AccountManagerFuture<Bundle> accountManagerFuture) {
+                        Bundle bundle;
+                        try {
+                            bundle = accountManagerFuture.getResult();
+                            Intent intent = bundle.getParcelable(AccountManager.KEY_INTENT);
+                            startActivity(intent);
+                            finish();
+                        } catch (AuthenticatorException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } catch (android.accounts.OperationCanceledException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, null);
             }
-        }, null);
+        }
+    }
+
+    private void showProgressBar() {
+        mListView.setVisibility(View.GONE);
+        mEditText.setVisibility(View.GONE);
+        mImageButton.setVisibility(View.GONE);
+        mProgressBar.setVisibility(View.VISIBLE);
+    }
+
+    private void hideProgressBar() {
+        mListView.setVisibility(View.VISIBLE);
+        mEditText.setVisibility(View.VISIBLE);
+        mImageButton.setVisibility(View.VISIBLE);
+        mProgressBar.setVisibility(View.GONE);
     }
 
     private void launchNotification(CharSequence title, CharSequence contentText) {
@@ -320,6 +273,12 @@ public class MainActivity extends AppCompatActivity implements OnAccountsUpdateL
                             }
                         });
                     }
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            hideProgressBar();
+                        }
+                    });
                     break;
                 }
                 case "userJoined":

@@ -3,9 +3,12 @@ package me.edgeconsult.keys;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManager;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.design.widget.TextInputLayout;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -55,6 +58,21 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
     final String targetURL = "https://owncloudhk.net/oauth";
 
+    private WebSocketService mBoundService;
+    private boolean mIsBound = false;
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            Log.i(ServiceConnection.class.getSimpleName(), "onServiceConnected");
+            mBoundService = ((WebSocketService.MyBinder)service).getService();
+            mIsBound = true;
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            mBoundService = null;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
@@ -102,6 +120,14 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 loginSubmit();
             }
         });
+
+        bindService(new Intent(this, WebSocketService.class), mConnection, BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(mConnection);
     }
 
     private void guestSubmit() {
@@ -206,16 +232,21 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 guestCodeLayout.setEnabled(true);
                 guestSubmitButton.setEnabled(true);
                 if (intent != null) {
-                    String accountName = intent.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
-                    final Account account = new Account(accountName, intent.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
-                    String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
-                    String authtokenType = getString(R.string.auth_token_type);
-                    accountManager.addAccountExplicitly(account, null, null);
-                    accountManager.setAuthToken(account, authtokenType, authtoken);
-                    setAccountAuthenticatorResult(intent.getExtras());
-                    setResult(RESULT_OK, intent);
-                    finish();
-                    startActivity(new Intent(AuthenticatorActivity.this, MainActivity.class));
+                    if (mIsBound) {
+                        String authtoken = intent.getStringExtra(AccountManager.KEY_AUTHTOKEN);
+                        Log.i(AUTHENTICATOR_ACTIVITY_TAG, authtoken);
+                        mBoundService.connect(authtoken);
+                        setResult(RESULT_OK);
+                        finish();
+                        startActivity(new Intent(AuthenticatorActivity.this, MainActivity.class));
+                    } else {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(AuthenticatorActivity.this, "Error: service was not binded", Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    }
                 }
             }
         }.execute();

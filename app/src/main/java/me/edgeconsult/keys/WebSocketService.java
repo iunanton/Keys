@@ -22,11 +22,6 @@ import java.util.ArrayList;
 
 import javax.net.ssl.SSLContext;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.WebSocket;
-import okhttp3.WebSocketListener;
-
 /**
  * Created by yun on 10/15/17.
  */
@@ -47,6 +42,12 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         Log.i(WebSocketService.class.getSimpleName(), "onCreate");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(WebSocketService.class.getSimpleName(), "onStartCommand");
+        return START_STICKY;
     }
 
     @Override
