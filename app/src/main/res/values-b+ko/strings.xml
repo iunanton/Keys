@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">키스</string>
+    <string name="account_type">me.edgeconsult.keys</string>
+    <string name="auth_token_type">access_token</string>
+    <string name="error_invalid_username">이 유저네임이 너무 짧습니다</string>
+    <string name="error_invalid_code">이 코드가 너무 짧습니다</string>
+    <string name="error_invalid_password">이 암호가 너무 짧습니다</string>
+    <string name="error_field_required">이 필드는 필수입니다</string>
+    <string name="message_username">username</string>
+    <string name="message_time">time</string>
+    <string name="message_body">message_body</string>
+    <string name="message_hint">메시지를 입력하세요</string>
+    <string name="send_button">전송</string>
+</resources>
