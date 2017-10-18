@@ -42,6 +42,8 @@ import javax.net.ssl.HttpsURLConnection;
 public class AuthenticatorActivity extends AccountAuthenticatorActivity {
 
     private static final String AUTHENTICATOR_ACTIVITY_TAG = AuthenticatorActivity.class.getSimpleName();
+    private static final int REQUEST_SIGNUP = 0;
+
     private AccountManager accountManager = null;
 
     private TextInputLayout guestUsernameLayout;
@@ -55,6 +57,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     private EditText loginUsername;
     private EditText loginPassword;
     private Button loginSubmitButton;
+
+    private TextView signup;
 
     final String targetURL = "https://owncloudhk.net/oauth";
 
@@ -121,7 +125,28 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
             }
         });
 
+        signup = findViewById(R.id.link_signup);
+        signup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
+                //startActivityForResult(intent, REQUEST_SIGNUP);
+            }
+        });
+
         bindService(new Intent(this, WebSocketService.class), mConnection, BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_SIGNUP) {
+            if (resultCode == RESULT_OK) {
+
+                // TODO: Implement successful signup logic here
+                // By default we just finish the Activity and log them in automatically
+                this.finish();
+            }
+        }
     }
 
     @Override
