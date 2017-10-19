@@ -22,21 +22,21 @@
             android:textSize="20dp"
             android:text="Sign Up"/>
         <android.support.design.widget.TextInputLayout
-            android:id="@+id/login_username_layout"
+            android:id="@+id/registration_username_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <EditText
-                android:id="@+id/login_username"
+                android:id="@+id/registration_username"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
                 android:hint="Username"/>
         </android.support.design.widget.TextInputLayout>
         <android.support.design.widget.TextInputLayout
-            android:id="@+id/guest_code_layout"
+            android:id="@+id/registration_code_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-            <EditText android:id="@+id/guest_code"
+            <EditText android:id="@+id/registration_code"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
@@ -44,22 +44,22 @@
                 android:imeOptions="actionDone"/>
         </android.support.design.widget.TextInputLayout>
         <android.support.design.widget.TextInputLayout
-            android:id="@+id/login_password_layout"
+            android:id="@+id/registration_password_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-            <EditText android:id="@+id/login_password"
+            <EditText android:id="@+id/registration_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
                 android:hint="Password"/>
         </android.support.design.widget.TextInputLayout>
         <android.support.v7.widget.AppCompatButton
-            android:id="@+id/login_submit"
+            android:id="@+id/registration_submit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="Create Account"/>
-        <TextView android:id="@+id/link_signup"
+        <TextView android:id="@+id/link_login"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"

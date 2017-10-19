@@ -181,7 +181,7 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
                 HttpsURLConnection httpsURLConnection = null;
                 try {
                     URL url = new URL(targetURL);
-                    String urlParameters = "grant_type=guest&username="
+                    String urlParameters = "grant_type=temporary&username="
                             + URLEncoder.encode(username, "UTF-8") + "&code="
                             + URLEncoder.encode(code, "UTF-8");
                     Log.i(AUTHENTICATOR_ACTIVITY_TAG, urlParameters);
