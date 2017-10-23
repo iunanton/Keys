@@ -34,7 +34,7 @@ public class WebSocketService extends Service {
             = new ArrayList<MyListener>();
     private final Handler mHandler = new Handler();
 
-    private String targetURL = "wss://owncloudhk.net/app";
+    private String targetURL = "wss://owncloudhk.net";
     private org.java_websocket.client.WebSocketClient mWebSocketClient;
 
     private boolean connected = false;

@@ -134,11 +134,18 @@ public class MainActivity extends AppCompatActivity implements MyListener {
 
         mImageButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                String ed_text = mEditText.getText().toString().trim().replaceAll("\\r|\\n", " ").replaceAll("\'", "&apos;").replaceAll("\"", "&quot;");
+                String ed_text = mEditText.getText().toString().trim();
+                JSONObject json = new JSONObject();
+                try {
+                    json.put("messageBody", ed_text);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                Log.i(MAIN_ACTIVITY_TAG,json.toString());
                 if (ed_text.isEmpty() || ed_text.length() == 0 || ed_text.equals("")) {
                     //EditText is empty
                 } else {
-                    String msg = "{ \"type\": \"message\", \"data\": { \"messageBody\": \"" + ed_text + "\" } }";
+                    String msg = "{ \"type\": \"message\", \"data\": " + json.toString() + " }";
                     mBoundService.send(msg);
                     mEditText.setText("");
                 }
