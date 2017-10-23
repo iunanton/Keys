@@ -37,6 +37,7 @@
                 android:resource="@xml/authenticator" />
         </service>
         <activity android:name=".AuthenticatorActivity"></activity>
+        <activity android:name=".SignupActivity"></activity>
     </application>
 
 </manifest>
