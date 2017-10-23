@@ -129,8 +129,8 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
         signup.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
-                //startActivityForResult(intent, REQUEST_SIGNUP);
+                Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
+                startActivityForResult(intent, REQUEST_SIGNUP);
             }
         });
 
@@ -153,6 +153,11 @@ public class AuthenticatorActivity extends AccountAuthenticatorActivity {
     protected void onDestroy() {
         super.onDestroy();
         unbindService(mConnection);
+    }
+
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
     }
 
     private void guestSubmit() {
