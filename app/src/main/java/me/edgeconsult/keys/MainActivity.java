@@ -59,8 +59,6 @@ public class MainActivity extends AppCompatActivity implements MyListener {
     private ImageButton mImageButton;
     private ProgressBar mProgressBar;
 
-    private boolean activityOnPause = true;
-
     private NotificationManager mNotificationManager;
     private static int notificationID = 1;
     private PendingIntent mPendingIntent;
@@ -293,7 +291,7 @@ public class MainActivity extends AppCompatActivity implements MyListener {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (activityOnPause)
+                            if (!mIsResumed)
                                 launchNotification("New user joined", username + " joined! Say \"Hi\" to him!");
                             Toast.makeText(getApplicationContext(), username + " joined", Toast.LENGTH_LONG).show();
                         }
@@ -303,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements MyListener {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (activityOnPause)
+                            if (!mIsResumed)
                                 launchNotification("User left", "One user just left chat..");
                             Toast.makeText(getApplicationContext(), "user left", Toast.LENGTH_LONG).show();
                         }
@@ -316,7 +314,7 @@ public class MainActivity extends AppCompatActivity implements MyListener {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            if (activityOnPause)
+                            if (!mIsResumed)
                                 launchNotification("New message", message_username + ": " + message_body);
                             messagesAdapter.add(new Message(message_username, message_timestamp, message_body));
                         }
